@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import type { PropsWithChildren } from 'react';
 import {
   ImageSourcePropType,
@@ -6,7 +6,9 @@ import {
   Text,
   View,
   Image,
-  TouchableOpacity
+  TouchableOpacity,
+  Animated,
+  Easing
 } from 'react-native';
 
 import DiceOne from "../assets/One.png"
@@ -20,7 +22,7 @@ type DiceProps = PropsWithChildren<{
   imageUrl: ImageSourcePropType  // it will validate the image url against the properties
 }>
 
-const Dice = ({ imageUrl }: DiceProps): JSX.Element => { // it is a commonent properties like app 
+const Dice = ({ imageUrl }: DiceProps): JSX.Element => {
   return (
     <View style={styles.diceContainer}>
       <Image source={imageUrl} style={styles.diceImage} />
@@ -30,16 +32,41 @@ const Dice = ({ imageUrl }: DiceProps): JSX.Element => { // it is a commonent pr
 
 const App = (): React.JSX.Element => {
   const [diceImage, setDiceImage] = useState<ImageSourcePropType>(DiceOne);
+  const rotationAnim = useRef(new Animated.Value(0)).current;
 
   const rollDice = () => {
     const diceImages = [DiceOne, DiceTwo, DiceThree, DiceFour, DiceFive, DiceSix];
     const randomIndex = Math.floor(Math.random() * 6);
-    setDiceImage(diceImages[randomIndex]);
+
+    // Reset the rotation animation value
+    rotationAnim.setValue(0);
+
+    // Start the rotation animation
+    Animated.timing(rotationAnim, {
+      toValue: 1,
+      duration: 500,
+      easing: Easing.linear,
+      useNativeDriver: true,
+    }).start(() => {
+      // Set the new dice image once the animation is complete
+      setDiceImage(diceImages[randomIndex]);
+    });
+  };
+
+  const rotateInterpolate = rotationAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg']
+  });
+
+  const animatedStyle = {
+    transform: [{ rotate: rotateInterpolate }]
   };
 
   return (
     <View style={styles.container}>
-      <Dice imageUrl={diceImage} /> 
+      <Animated.View style={animatedStyle}>
+        <Dice imageUrl={diceImage} /> 
+      </Animated.View>
       <TouchableOpacity onPress={rollDice}>
         <Text style={styles.rollDiceBtnText}>Roll Dice</Text>
       </TouchableOpacity>
